@@ -14,15 +14,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Beresin Bandung — Jasa Bersih Rumah & Kost Bandung Terbaik",
-  description: "Cari jasa bersih-bersih kost atau rumah di Bandung? Beresin Bandung hadir dengan layanan Reguler & Deep Clean profesional, harga transparan mulai Rp 5.000/m², dan helper terpercaya.",
-  keywords: ["jasa bersih rumah Bandung", "jasa bersih kost Bandung", "cleaning service Bandung", "bersih kost harian Bandung", "deep clean Bandung"],
+  title: "SapuRapi.bdg — Jasa Bersih Rumah & Kost Bandung Terbaik",
+  description: "Cari jasa bersih-bersih kost atau rumah di Bandung? SapuRapi.bdg hadir dengan layanan Reguler & Deep Clean profesional, harga transparan, dan helper terpercaya.",
+  keywords: ["jasa bersih rumah Bandung", "jasa bersih kost Bandung", "cleaning service Bandung", "bersih kost harian Bandung", "deep clean Bandung", "SapuRapi"],
   authors: [{ name: BUSINESS_CONFIG.name }],
-  metadataBase: new URL("https://beresinbandung.com"), // Ganti jika domain sudah siap
+  metadataBase: new URL("https://sapurapi.com"), // Ganti jika domain sudah siap
   openGraph: {
-    title: "Beresin Bandung — Jasa Bersih Rumah & Kost Bandung",
-    description: "Hitung estimasi biaya bersih-bersih secara instan dan real-time. Layanan Reguler & Deep Clean terpercaya di Bandung.",
-    url: "https://beresinbandung.com",
+    title: "SapuRapi.bdg — Jasa Bersih Rumah & Kost Bandung",
+    description: "Hitung estimasi biaya bersih-bersih secara instan dan real-time. Layanan kebersihan terpercaya di Bandung dari SapuRapi.bdg.",
+    url: "https://sapurapi.com",
     siteName: BUSINESS_CONFIG.name,
     locale: "id_ID",
     type: "website",

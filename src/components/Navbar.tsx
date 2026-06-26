@@ -67,10 +67,12 @@ export default function Navbar() {
           <div className="flex-shrink-0">
             <a href="#" className="flex items-center gap-2 group">
               <span className="text-xl font-black tracking-tight text-zinc-900 dark:text-white transition-colors">
-                {BUSINESS_CONFIG.name.split(" ")[0]}
-                <span className="text-blue-500 font-extrabold group-hover:text-blue-600 dark:text-blue-400 transition-colors">
-                  {BUSINESS_CONFIG.name.split(" ")[1] ? ` ${BUSINESS_CONFIG.name.split(" ")[1]}` : ""}
-                </span>
+                {BUSINESS_CONFIG.name.includes(".") ? BUSINESS_CONFIG.name.split(".")[0] : BUSINESS_CONFIG.name}
+                {BUSINESS_CONFIG.name.includes(".") && (
+                  <span className="text-blue-500 font-extrabold group-hover:text-blue-600 dark:text-blue-400 transition-colors">
+                    .{BUSINESS_CONFIG.name.split(".")[1]}
+                  </span>
+                )}
               </span>
             </a>
           </div>

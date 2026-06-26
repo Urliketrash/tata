@@ -1,9 +1,9 @@
 // Konfigurasi Utama Website Jasa Bersih-Bersih Rumah & Kost (Bandung)
 
 export const BUSINESS_CONFIG = {
-  name: "Beresin Bandung",
+  name: "SapuRapi.bdg",
   tagline: "Bersih Cepat, Rapi Maksimal, Terpercaya di Bandung",
-  description: "Layanan bersih-bersih rumah dan kost profesional dengan standar tinggi. Melayani area Bandung dan sekitarnya.",
+  description: "Layanan bersih-bersih rumah dan kost profesional dengan standar tinggi dari SapuRapi.bdg. Melayani area Bandung dan sekitarnya.",
   phone: "6281234567890", // Nomor WhatsApp aktif (awali dengan kode negara 62, tanpa + atau 0)
   instagram: "beresinbandung.id",
   tiktok: "beresinbandung.id",
