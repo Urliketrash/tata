@@ -12,59 +12,52 @@ export const BUSINESS_CONFIG = {
   googleMapsLink: "https://maps.google.com/?q=Bandung",
 };
 
-export type ServicePackage = {
+// 1. Paket Satuan Per Ruangan
+export type RoomService = {
   id: string;
   name: string;
-  ratePerM2: number;
-  description: string;
-  features: string[];
+  regulerPrice: number;
+  deepPrice: number;
 };
 
-export const SERVICES: ServicePackage[] = [
-  {
-    id: "reguler",
-    name: "Reguler Clean",
-    ratePerM2: 5000,
-    description: "Layanan bersih-bersih standar harian untuk menjaga kenyamanan hunian Anda.",
-    features: [
-      "Menyapu & mengepel lantai",
-      "Membersihkan debu pada furnitur & meja",
-      "Merapikan tempat tidur & kamar",
-      "Membersihkan kamar mandi ringan",
-      "Membuang sampah ke tempat pembuangan terdekat",
-    ],
-  },
-  {
-    id: "deep",
-    name: "Deep Clean",
-    ratePerM2: 7000,
-    description: "Pembersihan menyeluruh, detail, dan mendalam untuk area yang jarang dibersihkan.",
-    features: [
-      "Semua fitur Reguler Clean",
-      "Pembersihan noda membandel kamar mandi/kerak lantai",
-      "Pembersihan kaca jendela bagian dalam & luar",
-      "Sedot debu kasur, sofa, dan karpet (vakum standar)",
-      "Pembersihan bagian dalam lemari & laci (jika kosong)",
-      "Disinfeksi area utama",
-    ],
-  },
+export const ROOM_SERVICES: RoomService[] = [
+  { id: "toilet", name: "Toilet / Kamar Mandi", regulerPrice: 50000, deepPrice: 100000 },
+  { id: "bedroom", name: "Kamar Tidur", regulerPrice: 50000, deepPrice: 100000 },
+  { id: "kitchen", name: "Dapur (Kitchen)", regulerPrice: 50000, deepPrice: 100000 },
+  { id: "living", name: "Ruang Tamu / Keluarga", regulerPrice: 45000, deepPrice: 85000 },
+  { id: "terrace", name: "Halaman Rumah / Teras", regulerPrice: 35000, deepPrice: 75000 },
 ];
 
-export const CALCULATOR_CONFIG = {
-  // Mode kalkulasi harga helper:
-  // 'multiplier' = Total Harga = Luas * Rate * Jumlah Helper (PRD Default)
-  // 'fixed' = Total Harga = Luas * Rate (Jumlah helper hanya mempercepat durasi, bukan pengali harga)
-  pricingMode: "multiplier" as "multiplier" | "fixed",
-
-  minArea: 1, // Luas minimum (m²)
-  maxArea: 500, // Luas maksimum (m²)
-  minHelpers: 1, // Minimal helper
-  maxHelpers: 4, // Maksimal helper
-  minOrderPrice: 50000, // Batas minimum order (Rp)
-
-  // Estimasi kecepatan kerja helper (m² per jam per helper) - untuk info durasi
-  m2PerHourPerHelper: 15,
+// 2. Paket Rumah (Mulai Tipe 36) - Harga per m2
+export const HOUSE_PACKAGE = {
+  minArea: 36,
+  regulerPribadiPerM2: 3500,
+  regulerMitraPerM2: 5500,
+  deepMitraPerM2: 13500,
 };
+
+// 3. Paket Kost (Maks 3x4m)
+export const KOST_PACKAGE = {
+  regulerPribadi: 50000,
+  regulerMitra: 75000,
+  deepMitra: 135000,
+};
+
+// 4. Paket Apartemen (Studio)
+export const APARTMENT_PACKAGE = {
+  regulerPribadi: 75000,
+  regulerMitra: 100000,
+  deepMitra: 175000,
+};
+
+// 5. Jasa Setrika Pakaian (New)
+export const IRONING_SERVICE = {
+  ratePerHour: 50000,
+  minHours: 2,
+};
+
+// Batas minimum order global agar tidak rugi operasional
+export const MIN_ORDER_PRICE = 100000;
 
 export const WHY_CHOOSE_US = [
   {
@@ -92,18 +85,18 @@ export const WHY_CHOOSE_US = [
 export const FAQS = [
   {
     question: "Apakah peralatan kebersihan sudah disediakan?",
-    answer: "Ya, helper kami datang membawa peralatan standar dan cairan pembersih dasar. Jika Anda memiliki preferensi alat atau cairan khusus (misalnya untuk marmer), Anda bisa menyediakannya di lokasi.",
+    answer: "Untuk paket dengan Alat Mitra, seluruh peralatan dan cairan pembersih disediakan oleh kami. Untuk opsi Alat Pribadi (seperti pada paket Kost/Apartemen), pemesan wajib menyiapkan peralatan standar seperti sapu, kain pel, ember, dan pembersih.",
   },
   {
-    question: "Berapa lama proses pengerjaan biasanya?",
-    answer: "Estimasi waktu bergantung pada luas area dan tingkat kekotoran. Rata-rata 1 helper dapat menyelesaikan area 15 m² dalam 1 jam.",
+    question: "Berapa batas minimal order untuk sekali panggil?",
+    answer: "Batas minimal order kumulatif untuk sekali panggil adalah Rp 100.000. Anda dapat menggabungkan beberapa layanan (misal: 1 Kamar Tidur Reguler + 1 Kamar Mandi Reguler) agar menyentuh batas minimal order.",
+  },
+  {
+    question: "Apa ketentuan untuk Jasa Setrika Pakaian?",
+    answer: "Tarif setrika adalah Rp 50.000 / jam dengan minimal order 2 jam (total Rp 100.000). Konsumen wajib menyediakan aliran listrik, setrika, meja setrika, dan hanger pakaian di lokasi.",
   },
   {
     question: "Bagaimana cara melakukan pembayaran?",
-    answer: "Pembayaran dapat dilakukan melalui transfer bank atau e-wallet (GoPay/OVO) setelah pengerjaan selesai dilakukan dan diperiksa oleh Anda.",
-  },
-  {
-    question: "Apakah melayani luar kota Bandung?",
-    answer: "Saat ini kami fokus melayani wilayah Kota Bandung, Kabupaten Bandung, dan Bandung Barat yang terjangkau transportasi umum/ojek online.",
+    answer: "Pembayaran dapat dilakukan melalui transfer bank atau e-wallet (GoPay/OVO) setelah pengerjaan selesai dilakukan dan diperiksa langsung oleh Anda di lokasi (COD).",
   },
 ];
