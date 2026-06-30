@@ -1,13 +1,37 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { BUSINESS_CONFIG } from "@/config";
+import { useRouter } from "next/navigation";
+import { useConfig } from "@/context/ConfigContext";
 import { MessageSquare, Menu, X, Sun, Moon } from "lucide-react";
 
 export default function Navbar() {
+  const router = useRouter();
+  const { config } = useConfig();
+  const { BUSINESS_CONFIG } = config;
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [logoClicks, setLogoClicks] = useState(0);
+
+  useEffect(() => {
+    if (logoClicks === 0) return;
+    const timeout = setTimeout(() => {
+      setLogoClicks(0);
+    }, 2500);
+    return () => clearTimeout(timeout);
+  }, [logoClicks]);
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const nextCount = logoClicks + 1;
+    if (nextCount >= 3) {
+      setLogoClicks(0);
+      router.push("/admin");
+    } else {
+      setLogoClicks(nextCount);
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -65,8 +89,13 @@ export default function Navbar() {
         <div className="flex h-12 items-center justify-between">
           {/* Logo */}
           <div className="flex-shrink-0">
-            <a href="#" className="flex items-center gap-2 group">
-              <span className="text-xl font-black tracking-tight text-zinc-900 dark:text-white transition-colors">
+            <a href="#" onClick={handleLogoClick} className="flex items-center gap-2 group">
+              <img
+                src="/logo-3d.png"
+                alt="SapuRapi Logo"
+                className="h-20 w-auto object-contain transition-transform group-hover:scale-105 dark:invert-0 -my-4"
+              />
+              <span className="text-2xl font-black tracking-tight text-zinc-900 dark:text-white transition-colors">
                 {BUSINESS_CONFIG.name.includes(".") ? BUSINESS_CONFIG.name.split(".")[0] : BUSINESS_CONFIG.name}
                 {BUSINESS_CONFIG.name.includes(".") && (
                   <span className="text-blue-500 font-extrabold group-hover:text-blue-600 dark:text-blue-400 transition-colors">

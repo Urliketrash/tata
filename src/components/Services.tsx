@@ -1,10 +1,12 @@
 "use client";
 
 import React from "react";
-import { ROOM_SERVICES, HOUSE_PACKAGE, KOST_PACKAGE, APARTMENT_PACKAGE, IRONING_SERVICE, MIN_ORDER_PRICE } from "@/config";
+import { useConfig } from "@/context/ConfigContext";
 import { Check, Info, Sparkles, Shirt, Home, Building, HelpCircle } from "lucide-react";
 
 export default function Services() {
+  const { config } = useConfig();
+  const { ROOM_SERVICES, HOUSE_PACKAGE, KOST_PACKAGE, APARTMENT_PACKAGE, IRONING_SERVICE, MIN_ORDER_PRICE } = config;
   return (
     <section id="layanan" className="relative py-24 bg-zinc-100/40 dark:bg-zinc-950/40">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 relative z-10">
@@ -157,7 +159,7 @@ export default function Services() {
               </div>
             </div>
             
-            <a href="#kalkulator" className="mt-8 text-center block w-full rounded-2xl bg-zinc-950 py-3.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-zinc-900 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-50">
+            <a href="#kalkulator" className="mt-8 text-center block w-full rounded-2xl bg-blue-600 py-3.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-blue-700 shadow-md shadow-blue-500/10">
               Pesan Kamar / Ruangan Satuan
             </a>
           </div>
@@ -174,10 +176,10 @@ export default function Services() {
               <p className="text-xs font-semibold text-zinc-500 mb-6">Merapikan pakaian kusut harian. Helper akan langsung datang ke rumah Anda di Bandung.</p>
               
               <div className="space-y-6">
-                <div className="text-center p-6 rounded-2xl bg-zinc-950 text-white dark:bg-zinc-900/40">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Tarif Jasa</span>
-                  <div className="text-3xl font-black tracking-tight text-white mt-1">
-                    Rp {IRONING_SERVICE.ratePerHour.toLocaleString("id-ID")} <span className="text-xs text-zinc-500">/ Jam</span>
+                <div className="text-center p-6 rounded-2xl bg-zinc-50 border border-zinc-200/50 text-zinc-900 dark:bg-zinc-900/40 dark:text-white dark:border-transparent">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Tarif Jasa</span>
+                  <div className="text-3xl font-black tracking-tight text-zinc-950 dark:text-white mt-1">
+                    Rp {IRONING_SERVICE.ratePerHour.toLocaleString("id-ID")} <span className="text-xs text-zinc-500 dark:text-zinc-400">/ Jam</span>
                   </div>
                 </div>
 
@@ -205,12 +207,31 @@ export default function Services() {
 
         </div>
 
-        {/* Global Warning Box */}
-        <div className="mt-12 flex items-start gap-3 rounded-2xl border border-zinc-200/50 bg-white/40 p-4 shadow-sm backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/20 max-w-xl mx-auto text-center justify-center">
-          <Info className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-          <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
-            <strong>Batas Minimum Kunjungan:</strong> Demi efisiensi transportasi bensin mitra, total pemesanan Anda wajib mencapai minimal <strong>Rp {MIN_ORDER_PRICE.toLocaleString("id-ID")}</strong> untuk sekali panggil.
-          </span>
+        {/* Global Warning & Transport Box */}
+        <div className="mt-12 grid gap-6 md:grid-cols-2 max-w-3xl mx-auto">
+          {/* Min Order Box */}
+          <div className="flex items-start gap-3 rounded-2xl border border-zinc-200/50 bg-white/40 p-5 shadow-sm backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/20 text-left">
+            <Info className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+            <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              <strong>Batas Minimum Kunjungan:</strong> Demi efisiensi transportasi bensin mitra, total pemesanan Anda wajib mencapai minimal <strong>Rp {MIN_ORDER_PRICE.toLocaleString("id-ID")}</strong> untuk sekali panggil.
+            </span>
+          </div>
+
+          {/* Shipping/Transport Zone Box */}
+          <div className="flex items-start gap-3 rounded-2xl border border-zinc-200/50 bg-white/40 p-5 shadow-sm backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/20 text-left">
+            <svg className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <div className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              <strong>Ketentuan Ongkir (Luar Bandung):</strong>
+              <div className="mt-1 space-y-0.5">
+                <div>• Zona 1 (0-10km): <strong className="text-emerald-500">Free Ongkir</strong></div>
+                <div>• Zona 2 (11-20km): <strong>Rp 20.000</strong></div>
+                <div>• Zona 3 (&gt;20km): <strong>Rp 25.000</strong> (Min. Order Rp 250.000)</div>
+              </div>
+            </div>
+          </div>
         </div>
 
       </div>

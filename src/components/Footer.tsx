@@ -1,9 +1,11 @@
 "use client";
 
 import React from "react";
-import { BUSINESS_CONFIG } from "@/config";
+import { useConfig } from "@/context/ConfigContext";
 
 export default function Footer() {
+  const { config } = useConfig();
+  const { BUSINESS_CONFIG } = config;
   const currentYear = new Date().getFullYear();
 
   return (
@@ -12,16 +14,25 @@ export default function Footer() {
         <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
           
           {/* Business Info */}
-          <div className="text-center sm:text-left">
-            <span className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white">
-              {BUSINESS_CONFIG.name.split(" ")[0]}
-              <span className="text-blue-500 font-semibold">
-                {BUSINESS_CONFIG.name.split(" ")[1] ? ` ${BUSINESS_CONFIG.name.split(" ")[1]}` : ""}
+          <div className="text-center sm:text-left flex flex-col sm:flex-row items-center gap-3">
+            <img
+              src="/logo-3d.png"
+              alt="SapuRapi Logo"
+              className="h-20 w-auto object-contain"
+            />
+            <div className="text-center sm:text-left">
+              <span className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white">
+                {BUSINESS_CONFIG.name.includes(".") ? BUSINESS_CONFIG.name.split(".")[0] : BUSINESS_CONFIG.name}
+                {BUSINESS_CONFIG.name.includes(".") && (
+                  <span className="text-blue-500 font-semibold">
+                    .{BUSINESS_CONFIG.name.split(".")[1]}
+                  </span>
+                )}
               </span>
-            </span>
-            <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400 font-medium">
-              Jasa bersih-bersih kost dan rumah terpercaya di Bandung.
-            </p>
+              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                Jasa bersih-bersih kost dan rumah terpercaya di Bandung.
+              </p>
+            </div>
           </div>
 
           {/* Quick Links */}

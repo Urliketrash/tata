@@ -1,11 +1,29 @@
 "use client";
 
 import React, { useState } from "react";
-import { FAQS, BUSINESS_CONFIG } from "@/config";
+import { useConfig } from "@/context/ConfigContext";
 import { ChevronDown, MessageSquare, Clock, MapPin, HelpCircle } from "lucide-react";
 
 export default function Contact() {
+  const { config } = useConfig();
+  const { FAQS, BUSINESS_CONFIG } = config;
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  const getInstagramUrl = (usernameOrUrl: string) => {
+    if (!usernameOrUrl) return "#";
+    if (usernameOrUrl.startsWith("http://") || usernameOrUrl.startsWith("https://")) {
+      return usernameOrUrl;
+    }
+    return `https://instagram.com/${usernameOrUrl.replace("@", "").trim()}`;
+  };
+
+  const getTiktokUrl = (usernameOrUrl: string) => {
+    if (!usernameOrUrl) return "#";
+    if (usernameOrUrl.startsWith("http://") || usernameOrUrl.startsWith("https://")) {
+      return usernameOrUrl;
+    }
+    return `https://tiktok.com/@${usernameOrUrl.replace("@", "").trim()}`;
+  };
 
   const toggleFaq = (index: number) => {
     if (openIndex === index) {
@@ -47,6 +65,7 @@ export default function Contact() {
                     }`}
                   >
                     <button
+                      suppressHydrationWarning
                       onClick={() => toggleFaq(index)}
                       className="flex w-full items-center justify-between p-6 text-left font-bold text-sm text-zinc-950 dark:text-white focus:outline-none"
                     >
@@ -86,20 +105,28 @@ export default function Contact() {
                 Punya kebutuhan custom atau area dengan kekotoran ekstrem? Tim admin kami siap merespons dengan cepat.
               </p>
 
-              {/* Cards info */}
+               {/* Cards info */}
               <div className="mt-10 space-y-4">
                 {/* Area Layanan */}
-                <div className="flex gap-4 rounded-2xl border border-zinc-200/50 bg-white/40 p-5 shadow-sm backdrop-blur-sm dark:border-zinc-800/80 dark:bg-zinc-900/30">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400">
+                <a
+                  href={BUSINESS_CONFIG.googleMapsLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex gap-4 rounded-2xl border border-zinc-200/50 bg-white/40 p-5 shadow-sm backdrop-blur-sm hover:bg-zinc-50 dark:hover:bg-zinc-900/30 hover:border-blue-500/30 transition-all dark:border-zinc-800/80 dark:bg-zinc-900/30 group"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-all">
                     <MapPin className="h-5 w-5" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">Cakupan Servis</h4>
+                    <h4 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                      Cakupan Servis
+                      <span className="text-[10px] text-blue-500 font-semibold lowercase tracking-normal group-hover:underline">(buka maps)</span>
+                    </h4>
                     <p className="mt-1 text-xs font-bold text-zinc-500 dark:text-zinc-400">
                       {BUSINESS_CONFIG.area}
                     </p>
                   </div>
-                </div>
+                </a>
 
                 {/* Jam Kerja */}
                 <div className="flex gap-4 rounded-2xl border border-zinc-200/50 bg-white/40 p-5 shadow-sm backdrop-blur-sm dark:border-zinc-800/80 dark:bg-zinc-900/30">
@@ -118,7 +145,7 @@ export default function Contact() {
               {/* Social links grid */}
               <div className="mt-6 grid grid-cols-2 gap-4">
                 <a
-                  href={`https://instagram.com/${BUSINESS_CONFIG.instagram}`}
+                  href={getInstagramUrl(BUSINESS_CONFIG.instagram)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-3 rounded-2xl border border-zinc-200/50 bg-white/40 p-4 text-zinc-500 hover:text-zinc-950 hover:bg-zinc-50 hover:scale-[1.03] transition-all dark:border-zinc-800/80 dark:bg-zinc-900/30 dark:text-zinc-400 dark:hover:text-zinc-50"
@@ -137,7 +164,7 @@ export default function Contact() {
                   <span className="text-xs font-bold tracking-wide">Instagram</span>
                 </a>
                 <a
-                  href={`https://tiktok.com/@${BUSINESS_CONFIG.tiktok}`}
+                  href={getTiktokUrl(BUSINESS_CONFIG.tiktok)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-3 rounded-2xl border border-zinc-200/50 bg-white/40 p-4 text-zinc-500 hover:text-zinc-950 hover:bg-zinc-50 hover:scale-[1.03] transition-all dark:border-zinc-800/80 dark:bg-zinc-900/30 dark:text-zinc-400 dark:hover:text-zinc-50"

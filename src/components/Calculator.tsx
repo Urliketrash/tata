@@ -1,15 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  ROOM_SERVICES,
-  HOUSE_PACKAGE,
-  KOST_PACKAGE,
-  APARTMENT_PACKAGE,
-  IRONING_SERVICE,
-  MIN_ORDER_PRICE,
-  BUSINESS_CONFIG
-} from "@/config";
+import RoomVisualizer from "./RoomVisualizer";
+import { useConfig } from "@/context/ConfigContext";
 import { Plus, Minus, MessageSquare, Info, ShieldCheck, CheckSquare, Square } from "lucide-react";
 
 type RoomSelection = {
@@ -20,7 +13,44 @@ type RoomSelection = {
 };
 
 export default function Calculator() {
+  const { config } = useConfig();
+  const {
+    ROOM_SERVICES,
+    HOUSE_PACKAGE,
+    KOST_PACKAGE,
+    APARTMENT_PACKAGE,
+    IRONING_SERVICE,
+    MIN_ORDER_PRICE,
+    BUSINESS_CONFIG,
+    TRANSPORT_ZONES
+  } = config;
   const [activeTab, setActiveTab] = useState<"house" | "unit" | "rooms" | "ironing">("house");
+  
+  // 3D Card Tilt State for Calculator
+  const [calcTilt, setCalcTilt] = useState({ rx: 0, ry: 0, mx: 50, my: 50, go: 0 });
+
+  const handleCalcMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const card = e.currentTarget;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const xc = rect.width / 2;
+    const yc = rect.height / 2;
+    // Subtle tilt for large card
+    const rx = -((y - yc) / yc) * 2;
+    const ry = ((x - xc) / xc) * 2;
+    setCalcTilt({
+      rx,
+      ry,
+      mx: (x / rect.width) * 100,
+      my: (y / rect.height) * 100,
+      go: 1,
+    });
+  };
+
+  const handleCalcMouseLeave = () => {
+    setCalcTilt({ rx: 0, ry: 0, mx: 50, my: 50, go: 0 });
+  };
   
   // Tab 1: Paket Rumah State
   const [houseArea, setHouseArea] = useState<number>(36);
@@ -46,9 +76,20 @@ export default function Calculator() {
   const [totalPrice, setTotalPrice] = useState<number>(0);
   const [isMinOrderApplied, setIsMinOrderApplied] = useState<boolean>(false);
 
+  // Transport Zone State
+  const [transportZone, setTransportZone] = useState<string>("zona1");
+
+  // Ironing Add-on State
+  const [ironingAddonActive, setIroningAddonActive] = useState<boolean>(false);
+  const [ironingAddonHours, setIroningAddonHours] = useState<number>(1);
+
+  // State to block booking for Zona 3 under 250K
+  const [isZone3Blocked, setIsZone3Blocked] = useState<boolean>(false);
+  const [basePrice, setBasePrice] = useState<number>(0);
+
   // Menghitung harga total berdasarkan tab aktif
   useEffect(() => {
-    let price = 0;
+    let servicePrice = 0;
 
     if (activeTab === "house") {
       const rate =
@@ -57,18 +98,18 @@ export default function Calculator() {
           : houseType === "mitra"
           ? HOUSE_PACKAGE.regulerMitraPerM2
           : HOUSE_PACKAGE.deepMitraPerM2;
-      price = houseArea * rate;
+      servicePrice = houseArea * rate;
     } 
     else if (activeTab === "unit") {
       if (unitType === "kost") {
-        price =
+        servicePrice =
           unitService === "pribadi"
             ? KOST_PACKAGE.regulerPribadi
             : unitService === "mitra"
             ? KOST_PACKAGE.regulerMitra
             : KOST_PACKAGE.deepMitra;
       } else {
-        price =
+        servicePrice =
           unitService === "pribadi"
             ? APARTMENT_PACKAGE.regulerPribadi
             : unitService === "mitra"
@@ -81,17 +122,38 @@ export default function Calculator() {
         const selection = roomSelection[room.id];
         if (selection && selection.quantity > 0) {
           const rate = selection.isDeep ? room.deepPrice : room.regulerPrice;
-          price += selection.quantity * rate;
+          servicePrice += selection.quantity * rate;
         }
       });
     } 
     else if (activeTab === "ironing") {
-      price = ironingHours * IRONING_SERVICE.ratePerHour;
+      servicePrice = ironingHours * IRONING_SERVICE.ratePerHour;
     }
 
-    setTotalPrice(price);
-    setIsMinOrderApplied(price > 0 && price < MIN_ORDER_PRICE);
-  }, [activeTab, houseArea, houseType, unitType, unitService, roomSelection, ironingHours]);
+    // Add ironing addon price if active (only for non-ironing tabs)
+    if (activeTab !== "ironing" && ironingAddonActive) {
+      servicePrice += ironingAddonHours * 50000;
+    }
+
+    setBasePrice(servicePrice);
+    
+    // Check if base service price meets minimum order (Rp 100.000)
+    const appliedServicePrice = (servicePrice > 0 && servicePrice < MIN_ORDER_PRICE) ? MIN_ORDER_PRICE : servicePrice;
+    setIsMinOrderApplied(servicePrice > 0 && servicePrice < MIN_ORDER_PRICE);
+
+    // Add transport fee
+    const zoneObj = TRANSPORT_ZONES.find((z) => z.id === transportZone);
+    const transportFee = zoneObj ? zoneObj.fee : 0;
+    
+    setTotalPrice(servicePrice > 0 ? (appliedServicePrice + transportFee) : 0);
+
+    // Zona 3 validation: Radius > 20km, min order Rp 250.000
+    if (transportZone === "zona3" && servicePrice > 0 && appliedServicePrice < 250000) {
+      setIsZone3Blocked(true);
+    } else {
+      setIsZone3Blocked(false);
+    }
+  }, [activeTab, houseArea, houseType, unitType, unitService, roomSelection, ironingHours, ironingAddonActive, ironingAddonHours, transportZone]);
 
   // Handler Luas Rumah
   const handleHouseAreaChange = (val: string) => {
@@ -132,9 +194,13 @@ export default function Calculator() {
   // WhatsApp Message Generator
   const getWhatsAppLink = () => {
     let message = "";
+    const zoneObj = TRANSPORT_ZONES.find((z) => z.id === transportZone);
+    const transportText = zoneObj ? `\n- Jarak Layanan: ${zoneObj.name} (Ongkir: Rp ${zoneObj.fee.toLocaleString("id-ID")})` : "";
+    const addonText = (activeTab !== "ironing" && ironingAddonActive) ? `\n- Tambahan Setrika: +${ironingAddonHours} Jam` : "";
+    
     const formattedPrice = totalPrice.toLocaleString("id-ID");
-    const minOrderText = isMinOrderApplied ? ` (Disesuaikan ke Min. Order Rp ${MIN_ORDER_PRICE.toLocaleString("id-ID")})` : "";
-    const actualPriceText = `Rp ${(isMinOrderApplied ? MIN_ORDER_PRICE : totalPrice).toLocaleString("id-ID")}`;
+    const minOrderText = isMinOrderApplied ? ` (Disesuaikan ke Min. Order Jasa Rp ${MIN_ORDER_PRICE.toLocaleString("id-ID")})` : "";
+    const actualPriceText = `Rp ${totalPrice.toLocaleString("id-ID")}`;
 
     if (activeTab === "house") {
       const modeText =
@@ -146,9 +212,9 @@ export default function Calculator() {
       
       message = `Halo ${BUSINESS_CONFIG.name}, saya ingin memesan *Paket Rumah* dengan rincian:
 - Luas Area: ${houseArea} m²
-- Paket: ${modeText}
-- Estimasi Tarif: ${actualPriceText}${minOrderText}
-
+- Paket: ${modeText}${addonText}${transportText}
+- Estimasi Tarif Total: ${actualPriceText}${minOrderText}
+ 
 Apakah bisa dijadwalkan? Terima kasih.`;
     } 
     else if (activeTab === "unit") {
@@ -161,9 +227,9 @@ Apakah bisa dijadwalkan? Terima kasih.`;
           : "Deep Clean - Wajib Alat Mitra";
 
       message = `Halo ${BUSINESS_CONFIG.name}, saya ingin memesan *Paket ${typeText}* dengan rincian:
-- Layanan: ${modeText}
-- Estimasi Tarif: ${actualPriceText}${minOrderText}
-
+- Layanan: ${modeText}${addonText}${transportText}
+- Estimasi Tarif Total: ${actualPriceText}${minOrderText}
+ 
 Apakah bisa dijadwalkan? Terima kasih.`;
     } 
     else if (activeTab === "rooms") {
@@ -177,16 +243,17 @@ Apakah bisa dijadwalkan? Terima kasih.`;
       });
 
       message = `Halo ${BUSINESS_CONFIG.name}, saya ingin memesan *Paket Satuan Per Ruangan* dengan rincian:
-${rincian}- Estimasi Tarif: ${actualPriceText}${minOrderText}
-
+${rincian}- Tambahan: ${addonText ? addonText : "Tidak ada"}${transportText}
+- Estimasi Tarif Total: ${actualPriceText}${minOrderText}
+ 
 Apakah bisa dijadwalkan? Terima kasih.`;
     } 
     else if (activeTab === "ironing") {
       message = `Halo ${BUSINESS_CONFIG.name}, saya ingin memesan *Jasa Setrika Pakaian* dengan rincian:
 - Durasi: ${ironingHours} Jam (Min. 2 Jam)
-- Catatan: Alat & listrik disediakan sendiri oleh konsumen
-- Estimasi Tarif: ${actualPriceText}
-
+- Catatan: Alat & listrik disediakan sendiri oleh konsumen${transportText}
+- Estimasi Tarif Total: ${actualPriceText}
+ 
 Apakah bisa dijadwalkan? Terima kasih.`;
     }
 
@@ -221,6 +288,7 @@ Apakah bisa dijadwalkan? Terima kasih.`;
             { id: "ironing", label: "Setrika" }
           ].map((tab) => (
             <button
+              suppressHydrationWarning
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex-1 min-w-[120px] rounded-2xl py-3 text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
@@ -235,7 +303,20 @@ Apakah bisa dijadwalkan? Terima kasih.`;
         </div>
 
         {/* Calculator Main Grid */}
-        <div className="mt-8 overflow-hidden rounded-[32px] border border-white/50 bg-white/40 shadow-2xl backdrop-blur-xl dark:border-white/5 dark:bg-zinc-900/40">
+        <div
+          onMouseMove={handleCalcMouseMove}
+          onMouseLeave={handleCalcMouseLeave}
+          style={{
+            "--rx": `${calcTilt.rx}deg`,
+            "--ry": `${calcTilt.ry}deg`,
+            "--mx": `${calcTilt.mx}%`,
+            "--my": `${calcTilt.my}%`,
+            "--go": calcTilt.go,
+            transform: `perspective(1000px) rotateX(${calcTilt.rx}deg) rotateY(${calcTilt.ry}deg)`,
+          } as React.CSSProperties}
+          className="tilt-card mt-8 overflow-hidden rounded-[32px] border border-white/50 bg-white/40 shadow-2xl backdrop-blur-xl dark:border-white/5 dark:bg-zinc-900/40 transition-transform duration-300 ease-out"
+        >
+          <div className="tilt-card-glare" />
           <div className="grid gap-0 md:grid-cols-12">
             
             {/* Input Panel (7 Cols) */}
@@ -259,6 +340,7 @@ Apakah bisa dijadwalkan? Terima kasih.`;
                       </label>
                       <div className="flex items-center gap-2">
                         <input
+                          suppressHydrationWarning
                           type="number"
                           value={houseArea || ""}
                           onChange={(e) => handleHouseAreaChange(e.target.value)}
@@ -270,6 +352,7 @@ Apakah bisa dijadwalkan? Terima kasih.`;
                       </div>
                     </div>
                     <input
+                      suppressHydrationWarning
                       type="range"
                       min={HOUSE_PACKAGE.minArea}
                       max={250}
@@ -297,6 +380,7 @@ Apakah bisa dijadwalkan? Terima kasih.`;
                         { id: "deep", label: "Deep Clean (Wajib Alat Mitra)", rate: HOUSE_PACKAGE.deepMitraPerM2, desc: "Pembersihan total kerak membandel, kaca, disinfeksi lengkap (wajib alat kami)." }
                       ].map((item) => (
                         <button
+                          suppressHydrationWarning
                           key={item.id}
                           onClick={() => setHouseType(item.id as any)}
                           className={`flex flex-col text-left p-4 rounded-2xl border transition-all ${
@@ -339,6 +423,7 @@ Apakah bisa dijadwalkan? Terima kasih.`;
                         }`}
                       />
                       <button
+                        suppressHydrationWarning
                         onClick={() => setUnitType("kost")}
                         className={`flex-1 rounded-xl py-2.5 text-center text-xs font-bold uppercase tracking-wider transition-colors relative z-10 ${
                           unitType === "kost" ? "text-zinc-950 dark:text-white" : "text-zinc-400"
@@ -347,6 +432,7 @@ Apakah bisa dijadwalkan? Terima kasih.`;
                         Kost (Maks 3x4m)
                       </button>
                       <button
+                        suppressHydrationWarning
                         onClick={() => setUnitType("apartment")}
                         className={`flex-1 rounded-xl py-2.5 text-center text-xs font-bold uppercase tracking-wider transition-colors relative z-10 ${
                           unitType === "apartment" ? "text-zinc-950 dark:text-white" : "text-zinc-400"
@@ -371,6 +457,7 @@ Apakah bisa dijadwalkan? Terima kasih.`;
                         const price = unitType === "kost" ? item.prices.kost : item.prices.apartment;
                         return (
                           <button
+                            suppressHydrationWarning
                             key={item.id}
                             onClick={() => setUnitService(item.id as any)}
                             className={`flex flex-col text-left p-4 rounded-2xl border transition-all ${
@@ -402,78 +489,89 @@ Apakah bisa dijadwalkan? Terima kasih.`;
                     <p className="text-xs font-semibold text-zinc-400">Pilih secara fleksibel ruangan mana saja yang perlu dibersihkan (Wajib Alat Mitra, Min. Order Rp100.000).</p>
                   </div>
 
-                  {/* List Ruangan */}
-                  <div className="space-y-4">
-                    {ROOM_SERVICES.map((room) => {
-                      const sel = roomSelection[room.id] || { quantity: 0, isDeep: false };
-                      const currentRate = sel.isDeep ? room.deepPrice : room.regulerPrice;
+                  <div className="grid gap-6 lg:grid-cols-12 items-start">
+                    {/* Room Visualizer 3D Map (Rendered first on mobile, second on desktop) */}
+                    <div className="lg:col-span-5 order-1 lg:order-2 flex justify-center">
+                      <RoomVisualizer
+                        roomSelection={roomSelection}
+                        onRoomQtyChange={handleRoomQtyChange}
+                        onRoomTypeToggle={handleRoomTypeToggle}
+                      />
+                    </div>
 
-                      return (
-                        <div
-                          key={room.id}
-                          className={`p-4 rounded-2xl border transition-all flex flex-col gap-3 ${
-                            sel.quantity > 0
-                              ? "border-blue-500/40 bg-white dark:border-blue-500/20 dark:bg-zinc-900"
-                              : "border-zinc-200/60 bg-white/10 dark:border-zinc-800/60"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className="text-xs font-extrabold text-zinc-950 dark:text-white">{room.name}</h4>
-                              <p className="text-[10px] font-bold text-zinc-400 mt-0.5">
-                                Rp {currentRate.toLocaleString("id-ID")} / Ruangan
-                              </p>
+                    {/* Room Selector List (Rendered second on mobile, first on desktop) */}
+                    <div className="lg:col-span-7 order-2 lg:order-1 space-y-4">
+                      {ROOM_SERVICES.map((room) => {
+                        const sel = roomSelection[room.id] || { quantity: 0, isDeep: false };
+                        const currentRate = sel.isDeep ? room.deepPrice : room.regulerPrice;
+
+                        return (
+                          <div
+                            key={room.id}
+                            className={`p-4 rounded-2xl border transition-all flex flex-col gap-3 ${
+                              sel.quantity > 0
+                                ? "border-blue-500/40 bg-white dark:border-blue-500/20 dark:bg-zinc-900"
+                                : "border-zinc-200/60 bg-white/10 dark:border-zinc-800/60"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h4 className="text-xs font-extrabold text-zinc-950 dark:text-white">{room.name}</h4>
+                                <p className="text-[10px] font-bold text-zinc-400 mt-0.5">
+                                  Rp {currentRate.toLocaleString("id-ID")} / Ruangan
+                                </p>
+                              </div>
+
+                              {/* Stepper qty */}
+                              <div className="flex items-center rounded-xl border border-zinc-200 dark:border-zinc-800 p-0.5 bg-zinc-50/50 dark:bg-zinc-950/20">
+                                <button
+                                  onClick={() => handleRoomQtyChange(room.id, false)}
+                                  disabled={sel.quantity <= 0}
+                                  className="h-7 w-7 rounded-lg bg-white flex items-center justify-center text-zinc-600 disabled:opacity-30 dark:bg-zinc-850 dark:text-zinc-400 shadow-sm"
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </button>
+                                <span className="w-8 text-center text-xs font-extrabold text-zinc-900 dark:text-white">
+                                  {sel.quantity}
+                                </span>
+                                <button
+                                  onClick={() => handleRoomQtyChange(room.id, true)}
+                                  className="h-7 w-7 rounded-lg bg-white flex items-center justify-center text-zinc-600 dark:bg-zinc-850 dark:text-zinc-400 shadow-sm"
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </button>
+                              </div>
                             </div>
 
-                            {/* Stepper qty */}
-                            <div className="flex items-center rounded-xl border border-zinc-200 dark:border-zinc-800 p-0.5 bg-zinc-50/50 dark:bg-zinc-950/20">
-                              <button
-                                onClick={() => handleRoomQtyChange(room.id, false)}
-                                disabled={sel.quantity <= 0}
-                                className="h-7 w-7 rounded-lg bg-white flex items-center justify-center text-zinc-600 disabled:opacity-30 dark:bg-zinc-850 dark:text-zinc-400 shadow-sm"
-                              >
-                                <Minus className="h-3 w-3" />
-                              </button>
-                              <span className="w-8 text-center text-xs font-extrabold text-zinc-900 dark:text-white">
-                                {sel.quantity}
-                              </span>
-                              <button
-                                onClick={() => handleRoomQtyChange(room.id, true)}
-                                className="h-7 w-7 rounded-lg bg-white flex items-center justify-center text-zinc-600 dark:bg-zinc-850 dark:text-zinc-400 shadow-sm"
-                              >
-                                <Plus className="h-3 w-3" />
-                              </button>
-                            </div>
+                            {/* Opsi reguler vs deep clean per ruangan */}
+                            {sel.quantity > 0 && (
+                              <div className="flex gap-2 border-t border-zinc-100 dark:border-zinc-800/60 pt-3">
+                                <button
+                                  onClick={() => handleRoomTypeToggle(room.id)}
+                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${
+                                    !sel.isDeep
+                                      ? "border-blue-500 bg-blue-500/5 text-blue-600 dark:border-blue-400 dark:text-blue-400"
+                                      : "border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400"
+                                  }`}
+                                >
+                                  Reguler (Rp {room.regulerPrice.toLocaleString("id-ID")})
+                                </button>
+                                <button
+                                  onClick={() => handleRoomTypeToggle(room.id)}
+                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${
+                                    sel.isDeep
+                                      ? "border-blue-500 bg-blue-500/5 text-blue-600 dark:border-blue-400 dark:text-blue-400"
+                                      : "border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400"
+                                  }`}
+                                >
+                                  Deep Clean (Rp {room.deepPrice.toLocaleString("id-ID")})
+                                </button>
+                              </div>
+                            )}
                           </div>
-
-                          {/* Opsi reguler vs deep clean per ruangan */}
-                          {sel.quantity > 0 && (
-                            <div className="flex gap-2 border-t border-zinc-100 dark:border-zinc-800/60 pt-3">
-                              <button
-                                onClick={() => handleRoomTypeToggle(room.id)}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${
-                                  !sel.isDeep
-                                    ? "border-blue-500 bg-blue-500/5 text-blue-600 dark:border-blue-400 dark:text-blue-400"
-                                    : "border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400"
-                                }`}
-                              >
-                                Reguler (Rp {room.regulerPrice.toLocaleString("id-ID")})
-                              </button>
-                              <button
-                                onClick={() => handleRoomTypeToggle(room.id)}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${
-                                  sel.isDeep
-                                    ? "border-blue-500 bg-blue-500/5 text-blue-600 dark:border-blue-400 dark:text-blue-400"
-                                    : "border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400"
-                                }`}
-                              >
-                                Deep Clean (Rp {room.deepPrice.toLocaleString("id-ID")})
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               )}
@@ -528,10 +626,99 @@ Apakah bisa dijadwalkan? Terima kasih.`;
                 </div>
               )}
 
+              {/* SECTION: ZONA TRANSPORT */}
+              <div className="border-t border-zinc-200/50 dark:border-zinc-800/40 pt-6 space-y-4">
+                <div>
+                  <h4 className="text-xs font-black text-zinc-950 dark:text-white uppercase tracking-wider">
+                    Pilih Wilayah Jarak (Ongkir)
+                  </h4>
+                  <p className="text-[10px] font-semibold text-zinc-400 mt-1">
+                    Gratis ongkir untuk wilayah Kota Bandung. Untuk wilayah luar kota Bandung, dikenakan ongkos kirim sesuai ketentuan radius jarak.
+                  </p>
+                </div>
+                
+                <div className="grid gap-2.5 sm:grid-cols-3">
+                  {TRANSPORT_ZONES.map((zone) => (
+                    <button
+                      suppressHydrationWarning
+                      key={zone.id}
+                      type="button"
+                      onClick={() => setTransportZone(zone.id)}
+                      className={`flex flex-col text-left p-3.5 rounded-2xl border transition-all ${
+                        transportZone === zone.id
+                          ? "border-blue-500 bg-blue-500/5 dark:border-blue-400 dark:bg-blue-400/5"
+                          : "border-zinc-200/60 bg-white/20 hover:bg-zinc-50/50 dark:border-zinc-800/80 dark:bg-zinc-950/10"
+                      }`}
+                    >
+                      <span className="text-[10px] font-black uppercase tracking-wider text-zinc-900 dark:text-white">{zone.id.toUpperCase()}</span>
+                      <span className="text-xs font-extrabold text-zinc-950 dark:text-white mt-1">{zone.name.split(":")[1] || zone.name}</span>
+                      <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 mt-1.5">
+                        {zone.fee === 0 ? "Free Ongkir" : `+Rp ${zone.fee.toLocaleString("id-ID")}`}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* SECTION: ADD-ON SETRIKA (Hanya untuk non-Setrika) */}
+              {activeTab !== "ironing" && (
+                <div className="border-t border-zinc-200/50 dark:border-zinc-800/40 pt-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-black text-zinc-950 dark:text-white uppercase tracking-wider">
+                        Layanan Tambahan: Jasa Setrika Pakaian
+                      </h4>
+                      <p className="text-[10px] font-semibold text-zinc-400 mt-1">Bantu rapikan pakaian harian. Tarif flat Rp 50.000 / jam (Min. 1 jam).</p>
+                    </div>
+                    
+                    <button
+                      suppressHydrationWarning
+                      type="button"
+                      onClick={() => setIroningAddonActive(!ironingAddonActive)}
+                      className={`rounded-xl px-4 py-2.5 text-[10px] font-black uppercase tracking-wider transition-all border ${
+                        ironingAddonActive
+                          ? "bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:border-blue-500"
+                          : "bg-white text-zinc-600 border-zinc-250 hover:bg-zinc-50 dark:bg-zinc-950 dark:text-zinc-400 dark:border-zinc-850"
+                      }`}
+                    >
+                      {ironingAddonActive ? "Batalkan" : "Tambah Setrika"}
+                    </button>
+                  </div>
+                  
+                  {ironingAddonActive && (
+                    <div className="flex items-center gap-4 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10 animate-scaleIn">
+                      <div className="flex items-center rounded-xl border border-zinc-200 bg-white p-0.5 dark:border-zinc-800 dark:bg-zinc-950/20">
+                        <button
+                          type="button"
+                          onClick={() => setIroningAddonHours((h) => Math.max(1, h - 1))}
+                          disabled={ironingAddonHours <= 1}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-zinc-600 shadow-sm transition-all disabled:opacity-30 dark:bg-zinc-800 dark:text-zinc-300"
+                        >
+                          <Minus className="h-3 w-3" />
+                        </button>
+                        <span className="w-10 text-center font-extrabold text-zinc-950 dark:text-white text-sm">
+                          {ironingAddonHours}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setIroningAddonHours((h) => Math.min(8, h + 1))}
+                          className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-zinc-600 shadow-sm transition-all dark:bg-zinc-800 dark:text-zinc-300"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
+                      </div>
+                      <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400">
+                        Jam Kerja Gosok Pakaian (+Rp {(ironingAddonHours * 50000).toLocaleString("id-ID")})
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
             </div>
 
             {/* Output Panel / Receipt View (5 Cols) */}
-            <div className="p-8 sm:p-12 md:col-span-5 bg-zinc-950 text-white flex flex-col justify-between border-l border-zinc-900/60">
+            <div className="p-8 sm:p-12 md:col-span-5 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-white flex flex-col justify-between border-l border-zinc-200 dark:border-zinc-900/60">
               <div className="space-y-8">
                 <div>
                   <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">
@@ -539,16 +726,16 @@ Apakah bisa dijadwalkan? Terima kasih.`;
                   </h3>
                   
                   {totalPrice <= 0 ? (
-                    <div className="mt-6 text-sm font-bold text-blue-400">
+                    <div className="mt-6 text-sm font-bold text-blue-500 dark:text-blue-400">
                       Silakan atur ruangan atau layanan pilihan Anda
                     </div>
                   ) : (
                     <div className="mt-6">
-                      <div className="text-4xl font-black tracking-tight text-white leading-none">
+                      <div className="text-4xl font-black tracking-tight text-zinc-950 dark:text-white leading-none">
                         Rp {Math.max(MIN_ORDER_PRICE, totalPrice).toLocaleString("id-ID")}
                       </div>
                       {isMinOrderApplied && (
-                        <div className="inline-block mt-3 rounded-lg bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-amber-400">
+                        <div className="inline-block mt-3 rounded-lg bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-amber-500 dark:text-amber-400">
                           Batas Minimal Order Diterapkan
                         </div>
                       )}
@@ -558,18 +745,18 @@ Apakah bisa dijadwalkan? Terima kasih.`;
 
                 {/* Progress bar warning untuk minimal order */}
                 {totalPrice > 0 && isMinOrderApplied && (
-                  <div className="space-y-2 border-t border-zinc-900/80 pt-6">
-                    <div className="flex justify-between text-[10px] font-extrabold uppercase tracking-wider text-amber-400">
+                  <div className="space-y-2 border-t border-zinc-200 dark:border-zinc-900/80 pt-6">
+                    <div className="flex justify-between text-[10px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400">
                       <span>Progres Minimal Order</span>
                       <span>{Math.round((totalPrice / MIN_ORDER_PRICE) * 100)}%</span>
                     </div>
-                    <div className="w-full bg-zinc-900 rounded-full h-1.5">
+                    <div className="w-full bg-zinc-200 dark:bg-zinc-900 rounded-full h-1.5">
                       <div
-                        className="bg-amber-400 h-1.5 rounded-full transition-all duration-500"
+                        className="bg-amber-500 dark:bg-amber-400 h-1.5 rounded-full transition-all duration-500"
                         style={{ width: `${(totalPrice / MIN_ORDER_PRICE) * 100}%` }}
                       />
                     </div>
-                    <p className="text-[10px] font-semibold text-zinc-400 leading-normal">
+                    <p className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400 leading-normal">
                       Harga pembersihan saat ini adalah Rp {totalPrice.toLocaleString("id-ID")}. Tambahkan layanan senilai <strong>Rp {(MIN_ORDER_PRICE - totalPrice).toLocaleString("id-ID")}</strong> lagi untuk memenuhi batas bensin/operasional. Jika tetap dipesan, tarif dibulatkan ke Rp 100.000.
                     </p>
                   </div>
@@ -577,10 +764,10 @@ Apakah bisa dijadwalkan? Terima kasih.`;
 
                 {/* Tab specific details list */}
                 {totalPrice > 0 && (
-                  <div className="space-y-4 border-t border-zinc-900/80 pt-6 text-xs font-semibold">
+                  <div className="space-y-4 border-t border-zinc-200 dark:border-zinc-900/80 pt-6 text-xs font-semibold">
                     <div className="flex justify-between">
                       <span className="text-zinc-500">Kategori</span>
-                      <span className="text-white uppercase tracking-wider text-[10px] font-black">
+                      <span className="text-zinc-950 dark:text-white uppercase tracking-wider text-[10px] font-black">
                         {activeTab === "house"
                           ? "Paket Rumah"
                           : activeTab === "unit"
@@ -596,11 +783,11 @@ Apakah bisa dijadwalkan? Terima kasih.`;
                       <>
                         <div className="flex justify-between">
                           <span className="text-zinc-500">Ukuran</span>
-                          <span className="text-white">{houseArea} m²</span>
+                          <span className="text-zinc-950 dark:text-white">{houseArea} m²</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-zinc-500">Harga Dasar</span>
-                          <span className="text-white">
+                          <span className="text-zinc-950 dark:text-white">
                             Rp {(houseType === "pribadi" ? HOUSE_PACKAGE.regulerPribadiPerM2 : houseType === "mitra" ? HOUSE_PACKAGE.regulerMitraPerM2 : HOUSE_PACKAGE.deepMitraPerM2).toLocaleString("id-ID")}/m²
                           </span>
                         </div>
@@ -612,11 +799,11 @@ Apakah bisa dijadwalkan? Terima kasih.`;
                       <>
                         <div className="flex justify-between">
                           <span className="text-zinc-500">Tipe Unit</span>
-                          <span className="text-white">{unitType === "kost" ? "Kost (3x4m)" : "Apartemen Studio"}</span>
+                          <span className="text-zinc-950 dark:text-white">{unitType === "kost" ? "Kost (3x4m)" : "Apartemen Studio"}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-zinc-500">Peralatan</span>
-                          <span className="text-white">{unitService === "pribadi" ? "Alat Pribadi" : "Alat Mitra"}</span>
+                          <span className="text-zinc-950 dark:text-white">{unitService === "pribadi" ? "Alat Pribadi" : "Alat Mitra"}</span>
                         </div>
                       </>
                     )}
@@ -630,7 +817,7 @@ Apakah bisa dijadwalkan? Terima kasih.`;
                             return (
                               <div key={room.id} className="flex justify-between text-[11px]">
                                 <span className="text-zinc-500">{room.name} ({sel.isDeep ? "Deep" : "Reg"})</span>
-                                <span className="text-white">{sel.quantity}x</span>
+                                <span className="text-zinc-950 dark:text-white">{sel.quantity}x</span>
                               </div>
                             );
                           }
@@ -644,24 +831,63 @@ Apakah bisa dijadwalkan? Terima kasih.`;
                       <>
                         <div className="flex justify-between">
                           <span className="text-zinc-500">Durasi Kerja</span>
-                          <span className="text-white">{ironingHours} Jam</span>
+                          <span className="text-zinc-950 dark:text-white">{ironingHours} Jam</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-zinc-500">Tarif Gosok</span>
-                          <span className="text-white">Rp {IRONING_SERVICE.ratePerHour.toLocaleString("id-ID")}/Jam</span>
+                          <span className="text-zinc-950 dark:text-white">Rp {IRONING_SERVICE.ratePerHour.toLocaleString("id-ID")}/Jam</span>
                         </div>
                       </>
                     )}
+
+                    {/* Add-on Ironing Details */}
+                    {activeTab !== "ironing" && ironingAddonActive && (
+                      <div className="flex justify-between border-t border-zinc-200 dark:border-zinc-900/60 pt-3">
+                        <span className="text-zinc-500">Add-on Setrika</span>
+                        <span className="text-zinc-950 dark:text-white font-extrabold">{ironingAddonHours} Jam (+Rp {(ironingAddonHours * 50000).toLocaleString("id-ID")})</span>
+                      </div>
+                    )}
+
+                    {/* Transport Fee Details */}
+                    <div className="flex justify-between border-t border-zinc-200 dark:border-zinc-900/60 pt-3">
+                      <span className="text-zinc-500">Biaya Jarak (Ongkir)</span>
+                      <span className="text-zinc-950 dark:text-white font-extrabold">
+                        {TRANSPORT_ZONES.find((z) => z.id === transportZone)?.fee === 0
+                          ? "Free Ongkir"
+                          : `+Rp ${TRANSPORT_ZONES.find((z) => z.id === transportZone)?.fee.toLocaleString("id-ID")}`}
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
 
+              {/* Zona 3 Blocked Warning */}
+              {totalPrice > 0 && isZone3Blocked && (
+                <div className="mt-6 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold leading-normal space-y-1 animate-scaleIn">
+                  <p className="font-extrabold text-[10px] uppercase tracking-wider text-rose-500">⚠️ Minimal Order Zona 3</p>
+                  <p className="text-[10px] text-rose-350">
+                    Radius &gt;20km membutuhkan minimal order layanan senilai <strong>Rp 250.000</strong>. Tambahkan pesanan Anda (sebelum ongkir) agar dapat memesan.
+                  </p>
+                </div>
+              )}
+
               {/* Action Button */}
               <div className="mt-12 space-y-4">
-                {totalPrice <= 0 ? (
+                {isZone3Blocked ? (
                   <button
+                    suppressHydrationWarning
                     disabled
-                    className="w-full rounded-full py-4 text-xs font-black uppercase tracking-wider text-zinc-500 bg-zinc-900 border border-zinc-800 cursor-not-allowed opacity-60 flex items-center justify-center gap-2"
+                    type="button"
+                    className="w-full rounded-full py-4 text-xs font-black uppercase tracking-wider text-rose-600 dark:text-rose-400 bg-rose-500/10 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 cursor-not-allowed flex items-center justify-center gap-2 opacity-80"
+                  >
+                    Batas Order Kurang (Min. Rp 250K)
+                  </button>
+                ) : totalPrice <= 0 ? (
+                  <button
+                    suppressHydrationWarning
+                    disabled
+                    type="button"
+                    className="w-full rounded-full py-4 text-xs font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500 bg-zinc-200 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 cursor-not-allowed opacity-60 flex items-center justify-center gap-2"
                   >
                     Booking Sekarang
                   </button>

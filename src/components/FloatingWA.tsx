@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { BUSINESS_CONFIG } from "@/config";
+import { useConfig } from "@/context/ConfigContext";
 
 export default function FloatingWA() {
+  const { config } = useConfig();
+  const { BUSINESS_CONFIG } = config;
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {

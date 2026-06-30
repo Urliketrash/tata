@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Outfit, Geist_Mono } from "next/font/google";
 import { BUSINESS_CONFIG } from "@/config";
+import { ConfigProvider } from "@/context/ConfigContext";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const outfit = Outfit({
+  variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
 });
 
 const geistMono = Geist_Mono({
@@ -19,6 +21,11 @@ export const metadata: Metadata = {
   keywords: ["jasa bersih rumah Bandung", "jasa bersih kost Bandung", "cleaning service Bandung", "bersih kost harian Bandung", "deep clean Bandung", "SapuRapi"],
   authors: [{ name: BUSINESS_CONFIG.name }],
   metadataBase: new URL("https://sapurapi.com"), // Ganti jika domain sudah siap
+  icons: {
+    icon: "/logo-3d.png",
+    shortcut: "/logo-3d.png",
+    apple: "/logo-3d.png",
+  },
   openGraph: {
     title: "SapuRapi.bdg — Jasa Bersih Rumah & Kost Bandung",
     description: "Hitung estimasi biaya bersih-bersih secara instan dan real-time. Layanan kebersihan terpercaya di Bandung dari SapuRapi.bdg.",
@@ -67,8 +74,8 @@ export default function RootLayout({
         "Saturday",
         "Sunday"
       ],
-      "opens": "08:00",
-      "closes": "18:00"
+      "opens": "07:00",
+      "closes": "22:00"
     },
     "priceRange": "Rp50.000 - Rp1.000.000"
   };
@@ -76,7 +83,7 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased scroll-smooth`}
+      className={`${outfit.variable} ${geistMono.variable} h-full antialiased scroll-smooth`}
       suppressHydrationWarning
     >
       <head>
@@ -89,7 +96,9 @@ export default function RootLayout({
         className="min-h-full flex flex-col bg-zinc-50 dark:bg-black"
         suppressHydrationWarning
       >
-        {children}
+        <ConfigProvider>
+          {children}
+        </ConfigProvider>
       </body>
     </html>
   );

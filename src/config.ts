@@ -8,7 +8,7 @@ export const BUSINESS_CONFIG = {
   instagram: "beresinbandung.id",
   tiktok: "beresinbandung.id",
   area: "Kota Bandung & sekitarnya",
-  workingHours: "08.00 - 18.00 WIB",
+  workingHours: "07.00 - 22.00 WIB",
   googleMapsLink: "https://maps.google.com/?q=Bandung",
 };
 
@@ -31,24 +31,31 @@ export const ROOM_SERVICES: RoomService[] = [
 // 2. Paket Rumah (Mulai Tipe 36) - Harga per m2
 export const HOUSE_PACKAGE = {
   minArea: 36,
-  regulerPribadiPerM2: 3500,
+  regulerPribadiPerM2: 4500,
   regulerMitraPerM2: 5500,
   deepMitraPerM2: 13500,
 };
 
 // 3. Paket Kost (Maks 3x4m)
 export const KOST_PACKAGE = {
-  regulerPribadi: 50000,
+  regulerPribadi: 65000,
   regulerMitra: 75000,
   deepMitra: 135000,
 };
 
 // 4. Paket Apartemen (Studio)
 export const APARTMENT_PACKAGE = {
-  regulerPribadi: 75000,
-  regulerMitra: 100000,
+  regulerPribadi: 100000,
+  regulerMitra: 120000,
   deepMitra: 175000,
 };
+
+// Transport Zones Configuration
+export const TRANSPORT_ZONES = [
+  { id: "zona1", name: "Zona 1: Radius 0-10km", fee: 0, desc: "Free Ongkir" },
+  { id: "zona2", name: "Zona 2: Radius 11-20km", fee: 20000, desc: "Ongkir Rp 20.000" },
+  { id: "zona3", name: "Zona 3: Radius >20km", fee: 25000, desc: "Ongkir Rp 25.000 (Min. Order Rp 250.000)" }
+];
 
 // 5. Jasa Setrika Pakaian (New)
 export const IRONING_SERVICE = {
