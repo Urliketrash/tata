@@ -50,7 +50,7 @@ export default function Services() {
                     <span className="text-zinc-950 dark:text-white text-sm font-black">Rp {KOST_PACKAGE.regulerPribadi.toLocaleString("id-ID")}/flat</span>
                   </li>
                   <li className="flex justify-between items-center">
-                    <span>Apartemen Studio</span>
+                    <span>Apartemen</span>
                     <span className="text-zinc-950 dark:text-white text-sm font-black">Rp {APARTMENT_PACKAGE.regulerPribadi.toLocaleString("id-ID")}/flat</span>
                   </li>
                 </ul>
@@ -82,7 +82,7 @@ export default function Services() {
                     <span className="text-blue-600 dark:text-blue-400 text-sm font-black">Rp {KOST_PACKAGE.regulerMitra.toLocaleString("id-ID")}/flat</span>
                   </li>
                   <li className="flex justify-between items-center">
-                    <span>Apartemen Studio</span>
+                    <span>Apartemen</span>
                     <span className="text-blue-600 dark:text-blue-400 text-sm font-black">Rp {APARTMENT_PACKAGE.regulerMitra.toLocaleString("id-ID")}/flat</span>
                   </li>
                 </ul>
@@ -111,7 +111,7 @@ export default function Services() {
                     <span className="text-zinc-950 dark:text-white text-sm font-black">Rp {KOST_PACKAGE.deepMitra.toLocaleString("id-ID")}/flat</span>
                   </li>
                   <li className="flex justify-between items-center">
-                    <span>Apartemen Studio</span>
+                    <span>Apartemen</span>
                     <span className="text-zinc-950 dark:text-white text-sm font-black">Rp {APARTMENT_PACKAGE.deepMitra.toLocaleString("id-ID")}/flat</span>
                   </li>
                 </ul>

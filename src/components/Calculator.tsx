@@ -438,7 +438,7 @@ Apakah bisa dijadwalkan? Terima kasih.`;
                           unitType === "apartment" ? "text-zinc-950 dark:text-white" : "text-zinc-400"
                         }`}
                       >
-                        Apartemen Studio
+                        Apartemen
                       </button>
                     </div>
                   </div>
@@ -799,7 +799,7 @@ Apakah bisa dijadwalkan? Terima kasih.`;
                       <>
                         <div className="flex justify-between">
                           <span className="text-zinc-500">Tipe Unit</span>
-                          <span className="text-zinc-950 dark:text-white">{unitType === "kost" ? "Kost (3x4m)" : "Apartemen Studio"}</span>
+                          <span className="text-zinc-950 dark:text-white">{unitType === "kost" ? "Kost (3x4m)" : "Apartemen"}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-zinc-500">Peralatan</span>

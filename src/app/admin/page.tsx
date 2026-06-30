@@ -813,7 +813,7 @@ export default function AdminPage() {
                 <div className="space-y-4">
                   <h3 className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white flex items-center gap-2">
                     <Building className="h-4 w-4 text-blue-500" />
-                    Tarif Flat Apartemen Studio
+                    Tarif Flat Apartemen
                   </h3>
                   <div className="space-y-3">
                     <div>
